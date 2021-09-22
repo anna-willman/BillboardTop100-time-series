@@ -9,3 +9,12 @@
 
 ### Machine Learning Model - Clustered genres with DTW distance to find genres with similar trends.
 ####     Application: Genres similar to much bigger genres can be played on the radio at the same time.
+
+## CODE
+### TS_FinalProject_Dataset.ipynb
+#### 1. Contains data processing to transform dataset from ranking by song/genre by week, to average ranking by genre by week
+#### 2. Dynamic time warping calculation on 50 genres with most top 100 rankings
+#### 3. Clustering of genres using DTW as similarity measure
+
+### Final Project Stats Models_git.rmd
+#### Statistical models used to forecast ranking for Rap genre
