@@ -18,3 +18,4 @@
 
 ### Final Project Stats Models_git.rmd
 #### Statistical models used to forecast ranking for Rap genre
+#### Tried ARIMA, SARIMA, Holt-Winters, and ARFIMA
