@@ -1,0 +1,189 @@
+# Set Working Directory
+```{r}
+setwd("C:/UChicago/MSCA 31006 Time Series Analysis and Forecasting/Assignments/Final Project")
+```
+
+# Load Libraries
+```{r}
+library(tseries)
+library(forecast)
+library(TSPred)
+library(fGarch)
+```
+
+# Read in Data
+```{r}
+data <- read.csv('FinalData.csv')
+```
+
+# Format Data
+```{r}
+# Make week col a date object
+data$Week <- as.Date(data$Week, "%Y-%m-%d")
+
+# Change col name to genre
+colnames(data)[2] <- 'Genre'
+```
+
+# Find Genres Present in Top 100 Every Week
+```{r}
+head(sort(table(data$Genre), decreasing = TRUE), 7)
+```
+The top genres are Country, Pop, R&B, Rap, and Rock.
+
+# Make Time Series for the Most Popular Genres
+```{r}
+# Extract genre specific rows
+Rap <- data[data$Genre == 'Rap',]
+Rap <- Rap[,c(1, 3)]
+
+# Convert to ts
+Rap.ts <- ts(Rap[,2], start = c(1999,7,12), end = c(2019,7,6), frequency = 52)
+```
+
+```{r}
+plot(Rap.ts)
+acf(Rap.ts, 500)
+pacf(Rap.ts, 500)
+adf.test(Rap.ts)
+kpss.test(Rap.ts)
+shapiro.test(Rap$WeeklyRank)
+decompose.rap <- decompose(Rap.ts, 'multiplicative')
+plot(decompose.rap)
+```
+
+# Train - Test Split
+```{r}
+Rap.Train <- window(Rap.ts, start = c(1999,7), end = c(2017,12))
+Rap.Test <- window(Rap.ts, start = c(2018,1))
+```
+
+# Baseline Models
+```{r}
+#(2, 1, 2)(1, 0, 0) w/ drift
+auto.Rap <- auto.arima(Rap.Train, )
+summary(auto.Rap)
+```
+
+# Baseline Forecasts
+```{r}
+num.weeks.forecast <- length(Rap.Test)
+
+auto.forecast.Rap <- forecast(auto.Rap, num.weeks.forecast)
+plot(auto.forecast.Rap)
+forecast::accuracy(auto.forecast.Rap$mean, Rap.Test)
+sMAPE(auto.forecast.Rap$mean, Rap.Test)
+```
+
+# Best Arima Function
+```{r}
+BestArima <- function(train.data, test.data){
+  d = 1
+  
+  best.p <- 0
+  best.q <- 0
+  best.AIC <- 100000000
+  best.BIC <- 100000000
+  
+  for(p in 0:5){
+    for(q in 0:5){
+      mod <- Arima(train.data, order = c(best.p, d, best.q))
+      aic <- mod$aic
+      bic <- mod$bic
+      
+      if(aic < best.AIC & bic < best.BIC){
+        best.p <- p
+        best.q <- q
+      }
+    }
+  }
+  
+  best.mod <- Arima(train.data, order = c(best.p, d, best.q))
+  return(best.mod)
+}
+```
+
+# Best Models
+```{r}
+ARIMA.Rap <- BestArima(Rap.Train, Rap.Test)
+summary(ARIMA.Rap)
+```
+
+# Best ARIMA Forecasts
+```{r}
+num.weeks.forecast <- length(Rap.Test)
+
+forecast.Rap <- forecast(ARIMA.Rap, num.weeks.forecast)
+plot(forecast.Rap)
+forecast::accuracy(forecast.Rap$mean, Rap.Test)
+sMAPE(forecast.Rap$mean, Rap.Test)
+MSE(forecast.Rap$mean, Rap.Test)
+```
+
+# Best SARIMA
+```{r}
+BestSArima <- function(train.data, test.data){
+  d = 1
+  
+  best.p <- 0
+  best.q <- 0
+  best.AIC <- 100000000
+  best.BIC <- 100000000
+  
+  for(p in 0:1){
+    for(q in 0:1){
+      mod <- Arima(train.data, order = c(5, 1, 5), seasonal = c(best.p, d, best.q))
+      aic <- mod$aic
+      bic <- mod$bic
+      
+      if(aic < best.AIC & bic < best.BIC){
+        best.p <- p
+        best.q <- q
+      }
+    }
+  }
+  
+  best.mod <- Arima(train.data, order = c(5, 1, 5), seasonal = c(best.p, d, best.q))
+  return(best.mod)
+}
+```
+
+
+
+# SARIMA 
+```{r}
+SARIMA.rap <- Arima(Rap.Train, order = c(5, 1, 5), seasonal = c(0,1,1))
+# SARIMA.rap <- BestSArima(Rap.Train, Rap.Test)
+SARIMA.rap.forecast <- forecast(SARIMA.rap, length(Rap.Test))
+plot(SARIMA.rap.forecast)
+summary(SARIMA.rap)
+forecast::accuracy(SARIMA.rap.forecast$mean, Rap.Test)
+sMAPE(SARIMA.rap.forecast$mean, Rap.Test)
+MSE(SARIMA.rap.forecast$mean, Rap.Test)
+```
+
+
+# Holt-Winters
+```{r}
+HW.rap <- HoltWinters(Rap.Train, beta = FALSE, gamma = FALSE, seasonal = 'multiplicative')
+HW.forecast <- forecast(HW.rap, length(Rap.Test))
+plot(HW.forecast)
+summary(HW.rap)
+forecast::accuracy(HW.forecast$mean, Rap.Test)
+sMAPE(HW.forecast$mean, Rap.Test)
+MSE(HW.forecast$mean, Rap.Test)
+```
+
+# ARFIMA
+```{r}
+ARFIMA.rap <- arfima(Rap.Train)
+ARFIMA.rap.forecast <- forecast(ARFIMA.rap, length(Rap.Test))
+plot(ARFIMA.rap.forecast)
+summary(ARFIMA.rap)
+forecast::accuracy(ARFIMA.rap.forecast$mean, Rap.Test)
+sMAPE(ARFIMA.rap.forecast$mean, Rap.Test)
+MSE(ARFIMA.rap.forecast$mean, Rap.Test)
+```
+
+
+
